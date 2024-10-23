@@ -1,0 +1,61 @@
+@import "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css";
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,801;1,801&display=swap");
+
+html {
+  background-color: #c6b2e1; /* Light purple background color */
+}
+
+/* General Styles */
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #c6b2e1; /* Light purple background color */
+  font-family: Nunito, sans-serif;
+  font-weight: 900;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Button Styles */
+.btn {
+  border: none;
+  border-radius: 40px;
+  font-size: 2rem;
+  font-weight: bold;
+  padding: 15px 40px;
+  color: #000; /* Black text */
+  cursor: pointer;
+}
+
+.btn-flash {
+  background-color: #e9d3aa; /* Light yellow-ish background */
+}
+
+.btn-test {
+  background-color: #c97a85; /* Light pink background */
+}
+
+#gear {
+  width: 80px;
+  height: 80px;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.spinning {
+  animation: rotation 0.8s infinite linear;
+}

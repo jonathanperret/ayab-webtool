@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Button Design</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/avrgirl-arduino@5.0.1/dist/avrgirl-arduino.global.js"></script>
+    <script type="module" src="script.js"></script>
+  </head>
+  <body>
+    <section class="section has-text-weight-bold">
+      <div class="container">
+        <h1 class="title">AYAB web tool</h1>
+        <p class="subtitle">Flash AYAB firmwares to test them!</p>
+
+        <nav class="panel" id="firmwares" style="width:35em">
+            <p class="panel-heading" >Pick a PR to flash its firmware</p>
+            <p class="panel-block is-flex-direction-column">
+                Retrieving firmware list, please wait…
+                <progress class="progress is-large is-info" max="100"></progress>
+            </p>
+        </nav>
+
+        <button class="button is-primary" disabled id="uploadBtn">Flash selected firmware to Arduino</button>
+        <progress id="progress-bar" class="progress is-large is-primary" max="100" value="0"></progress>
+        <div id="result"></div>
+      </div>
+    </section>
+  </body>
+</html>
