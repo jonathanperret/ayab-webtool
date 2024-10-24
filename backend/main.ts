@@ -1,29 +1,28 @@
 import * as log from "jsr:@std/log";
 import { router } from "jsr:@denosaurs/rutt";
 import {
-  BlobReader,
-  BlobWriter,
-  ZipReader,
-} from "https://deno.land/x/zipjs/index.js";
+    BlobReader,
+    BlobWriter,
+    ZipReader,
+} from "https://deno.land/x/zipjs@v2.7.52/index.js";
 log.setup({
-  handlers: {
-    default: new log.ConsoleHandler("DEBUG", {
-      formatter: ({ levelName, msg, datetime }) => `${datetime.toISOString()} ${levelName} ${msg}`,
-      useColors: false,
-    }),
-  },
+    handlers: {
+        default: new log.ConsoleHandler("DEBUG", {
+            formatter: ({ levelName, msg, datetime }) => `${datetime.toISOString()} ${levelName} ${msg}`,
+            useColors: false,
+        }),
+    },
 });
 
-
 const githubCache = await caches.open("github");
-const githubCacheSuffix = ':v3';
+const githubCacheSuffix = ':v4';
 
 const repoUrl = 'https://api.github.com/repos/AllYarnsAreBeautiful/ayab-firmware';
 
-async function githubFetch(url) {
+async function githubFetch(url: string) {
     const cacheKey = url + githubCacheSuffix;
     const cached = await githubCache.match(cacheKey);
-    if(cached) {
+    if (cached) {
         log.info(`found ${url} in cache`);
         return cached;
     }
@@ -34,7 +33,7 @@ async function githubFetch(url) {
             "Authorization": `Bearer ${Deno.env.get("GITHUB_TOKEN")}`
         }
     });
-    if(!res.ok) return res;
+    if (!res.ok) return res;
 
     await githubCache.put(cacheKey, res.clone());
     return res;
@@ -45,7 +44,7 @@ Deno.serve(router({
         const pullsResponse = await githubFetch(`${repoUrl}/pulls?per_page=100`);
         const pulls = await pullsResponse.json();
         const pullList = [];
-        for(const pull of pulls) {
+        for (const pull of pulls) {
             pullList.push({
                 number: pull.number,
                 title: pull.title,
@@ -55,9 +54,10 @@ Deno.serve(router({
         }
 
         const runsResponse = await githubFetch(`${repoUrl}/actions/runs?per_page=100`);
-        const runs = await runsResponse.json();
+        const runs: { workflow_runs: [{ name: string, head_sha: string, artifacts_url: string }] } =
+            await runsResponse.json();
         const hexs = [];
-        for(const run of runs.workflow_runs.filter(r => r.name == "Archive Build")) {
+        for (const run of runs.workflow_runs.filter(r => r.name == "Archive Build")) {
             const head_sha = run.head_sha;
             const pull = pullList.find(pull => pull.head_sha == head_sha);
             if (pull) {
@@ -84,7 +84,7 @@ Deno.serve(router({
             }
         });
     },
-    "/hex/:id": async (req: Request, _, { id }) => {
+    "/hex/:id": async (_req: Request, _, { id }) => {
         const artifactResponse = await githubFetch(`${repoUrl}/actions/artifacts/${id}/zip`);
         const zipData = await artifactResponse.blob();
         const zipReader = new ZipReader(new BlobReader(zipData));
@@ -96,7 +96,7 @@ Deno.serve(router({
             return new Response(null, { status: 404 });
         }
 
-        const hexData = await hexEntry.getData(new BlobWriter());
+        const hexData = await hexEntry.getData?.(new BlobWriter());
 
         console.log(hexData);
 
