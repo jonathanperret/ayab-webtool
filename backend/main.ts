@@ -46,23 +46,28 @@ async function githubFetch(
 Deno.serve(
   router({
     '/hex': async (req: Request) => {
-      const pullsResponse = await githubFetch(
-        `${repoUrl}/pulls?per_page=100`,
-      );
-      const pulls = await pullsResponse.json();
-      const pullList = [];
-      for (const pull of pulls) {
-        pullList.push({
-          number: pull.number,
-          title: pull.title,
-          html_url: pull.html_url,
-          head_sha: pull.head.sha,
-        });
-      }
+      const [pullsResponse, runsResponse] = await Promise.all([
+        githubFetch(
+          `${repoUrl}/pulls?per_page=100`,
+        ),
+        githubFetch(
+          `${repoUrl}/actions/runs?per_page=100`,
+        ),
+      ]);
 
-      const runsResponse = await githubFetch(
-        `${repoUrl}/actions/runs?per_page=100`,
-      );
+      const pulls: [{
+        number: number;
+        title: string;
+        html_url: string;
+        head: { sha: string };
+      }] = await pullsResponse.json();
+      const pullList = pulls.map((pull) => ({
+        number: pull.number,
+        title: pull.title,
+        html_url: pull.html_url,
+        head_sha: pull.head.sha,
+      }));
+
       const runs: {
         workflow_runs: [
           {
