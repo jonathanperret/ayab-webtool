@@ -19,9 +19,9 @@ const githubCacheSuffix = ':v4';
 
 const repoUrl = 'https://api.github.com/repos/AllYarnsAreBeautiful/ayab-firmware';
 
-async function githubFetch(url: string) {
+async function githubFetch(url: string, options: { useCache: boolean } = { useCache: false }) {
     const cacheKey = url + githubCacheSuffix;
-    const cached = await githubCache.match(cacheKey);
+    const cached = options.useCache && await githubCache.match(cacheKey);
     if (cached) {
         log.info(`found ${url} in cache`);
         return cached;
@@ -35,7 +35,9 @@ async function githubFetch(url: string) {
     });
     if (!res.ok) return res;
 
-    await githubCache.put(cacheKey, res.clone());
+    if (options.useCache) {
+        await githubCache.put(cacheKey, res.clone());
+    }
     return res;
 }
 
@@ -54,14 +56,19 @@ Deno.serve(router({
         }
 
         const runsResponse = await githubFetch(`${repoUrl}/actions/runs?per_page=100`);
-        const runs: { workflow_runs: [{ name: string, head_sha: string, artifacts_url: string }] } =
-            await runsResponse.json();
+        const runs: {
+            workflow_runs: [{
+                name: string, conclusion: string,
+                head_sha: string, artifacts_url: string
+            }]
+        } = await runsResponse.json();
         const hexs = [];
-        for (const run of runs.workflow_runs.filter(r => r.name == "Archive Build")) {
+        console.log(runs);
+        for (const run of runs.workflow_runs.filter(r => r.name == "Archive Build" && r.conclusion == "success")) {
             const head_sha = run.head_sha;
             const pull = pullList.find(pull => pull.head_sha == head_sha);
             if (pull) {
-                const artifactsResponse = await githubFetch(run.artifacts_url);
+                const artifactsResponse = await githubFetch(run.artifacts_url, { useCache: true });
                 const artifacts = await artifactsResponse.json();
                 const artifact = artifacts.artifacts[0];
 
@@ -85,7 +92,7 @@ Deno.serve(router({
         });
     },
     "/hex/:id": async (_req: Request, _, { id }) => {
-        const artifactResponse = await githubFetch(`${repoUrl}/actions/artifacts/${id}/zip`);
+        const artifactResponse = await githubFetch(`${repoUrl}/actions/artifacts/${id}/zip`, { useCache: true });
         const zipData = await artifactResponse.blob();
         const zipReader = new ZipReader(new BlobReader(zipData));
         const zipEntries = await zipReader.getEntries();
