@@ -23,39 +23,6 @@ body {
   gap: 20px;
 }
 
-/* Button Styles */
-.btn {
-  border: none;
-  border-radius: 40px;
-  font-size: 2rem;
-  font-weight: bold;
-  padding: 15px 40px;
-  color: #000; /* Black text */
-  cursor: pointer;
-}
-
-.btn-flash {
-  background-color: #e9d3aa; /* Light yellow-ish background */
-}
-
-.btn-test {
-  background-color: #c97a85; /* Light pink background */
-}
-
-#gear {
-  width: 80px;
-  height: 80px;
-}
-
-@keyframes rotation {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(359deg);
-  }
-}
-
-.spinning {
-  animation: rotation 0.8s infinite linear;
+#result, #firmwares {
+  width: 35em;
 }

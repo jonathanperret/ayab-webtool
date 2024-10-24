@@ -31,7 +31,7 @@ async function handleFlash(e) {
             result.textContent = error.message;
             console.error(error);
         } else {
-            result.textContent = "done!";
+            result.textContent = "Firmware flashing done. You can now test this firmware with the AYAB desktop app. Happy knitting!";
         }
     });
 }
