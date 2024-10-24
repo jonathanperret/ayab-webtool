@@ -79,7 +79,6 @@ Deno.serve(
         ];
       } = await runsResponse.json();
       const hexs = [];
-      console.log(runs);
       for (
         const run of runs.workflow_runs.filter(
           (r) => r.name == 'Archive Build' && r.conclusion == 'success',
@@ -134,8 +133,6 @@ Deno.serve(
       }
 
       const hexData = await hexEntry.getData?.(new BlobWriter());
-
-      console.log(hexData);
 
       return new Response(hexData, {
         headers: {
