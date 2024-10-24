@@ -76,6 +76,22 @@ document.addEventListener('DOMContentLoaded', () => {
     progressBar = document.getElementById('progress-bar');
     firmwaresDiv = document.getElementById("firmwares");
 
+    if (!navigator.serial) {
+        firmwaresDiv.innerHTML = `
+            <article class="message is-danger">
+            <div class="message-header">
+            <p>Unsupported browser</p>
+            </div>
+            <div class="message-body">
+            Darn, it looks like your browser does not support the WebSerial API.
+            <br>
+            Please try again with Google Chrome or Microsoft Edge.
+            </div>
+            </article>
+        `;
+        return;
+    }
+
     uploadBtn.addEventListener('click', handleFlash, false);
 
     firmwaresDiv.addEventListener('click', (ev) => {
