@@ -19,10 +19,10 @@ async function handleFlash(e) {
 
     const board = 'uno';
 
-    let avrgirl = new AvrgirlArduino({
+    const avrgirl = new AvrgirlArduino({
         board: board,
         debug: true
-    });    
+    });
 
     avrgirl.flash(hexData, (error) => {
         progressBar.value = 100;
@@ -47,7 +47,7 @@ function htmlEscape(s) {
         '"': '&quot;',
         '&': '&amp;'
     }
-    
+
     return s.replace(/[<>"&]/g, escapeChar)
 }
 
@@ -59,7 +59,7 @@ async function getFirmwares() {
         <p class="panel-heading">Pick a PR to flash its firmware</p>
         ${hexs.map(hex => `
             <label class="panel-block radio">
-                <input type="radio" name="firmware" class="mr-2" value="${hex.download_url}">
+                <input type="radio" name="firmware" class="mr-2" data-url="${hex.download_url}" data-pr="${hex.pull_number}">
                 <div class="is-flex is-flex-direction-column">
                     <span><a href="${hex.pull_url}" target="_blank" class="mr-1">#${hex.pull_number}</a>${htmlEscape(hex.pull_title)}</span>
                     <span class="is-size-7 ml-1">built on ${new Date(hex.created_at).toLocaleString()}</span>
@@ -68,6 +68,17 @@ async function getFirmwares() {
         `).join('')}
     `;
 
+    selectFirmwareFromURL();
+}
+
+function selectFirmwareFromURL() {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const pr = hashParams?.get('pr');
+
+    if (pr) {
+        const prInput = firmwaresDiv.querySelector(`input[data-pr="${pr}"]`);
+        prInput?.click();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -96,8 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     firmwaresDiv.addEventListener('click', (ev) => {
         if (ev.target.tagName === 'INPUT') {
-            hexUrl = ev.target.value;
+            const input = ev.target;
+            hexUrl = input.dataset.url;
             uploadBtn.disabled = false;
+            window.location.hash = `#pr=${input.dataset.pr}`;
         }
     });
 
