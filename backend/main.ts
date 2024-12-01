@@ -30,11 +30,21 @@ async function githubFetch(
   }
   log.info(`fetching ${url}`);
 
-  const res = await fetch(url, {
+  const fetchOptions: RequestInit = {
     headers: {
       Authorization: `Bearer ${Deno.env.get('GITHUB_TOKEN')}`,
     },
-  });
+    redirect: 'manual',
+  };
+
+  let res = await fetch(url, fetchOptions);
+
+  if (res.status >= 300 && res.status < 400) {
+    const newLocation: string = res.headers.get('location')!;
+    console.log(`following redirect to ${newLocation}`);
+    res = await fetch(newLocation, {});
+  }
+
   if (!res.ok) return res;
 
   if (options.useCache) {
@@ -118,7 +128,7 @@ Deno.serve(
     '/hex/:id': async (_req: Request, _, { id }) => {
       const artifactResponse = await githubFetch(
         `${repoUrl}/actions/artifacts/${id}/zip`,
-        { useCache: true },
+        { useCache: false },
       );
       const zipData = await artifactResponse.blob();
       const zipReader = new ZipReader(new BlobReader(zipData));
