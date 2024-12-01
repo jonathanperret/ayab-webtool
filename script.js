@@ -1,11 +1,16 @@
 let uploadBtn;
+let downloadBtn;
 let result;
 let progressBar;
 let firmwaresDiv;
+let webserialWarning;
 let hexUrl;
 
 async function handleFlash(e) {
     e.preventDefault();
+
+    progressBar.style.display = '';
+    result.style.display = '';
 
     progressBar.classList.remove("is-danger");
     progressBar.removeAttribute("value");
@@ -83,33 +88,28 @@ function selectFirmwareFromURL() {
 
 document.addEventListener('DOMContentLoaded', () => {
     uploadBtn = document.getElementById('uploadBtn');
+    downloadBtn = document.getElementById('downloadBtn');
     result = document.getElementById('result');
     progressBar = document.getElementById('progress-bar');
     firmwaresDiv = document.getElementById("firmwares");
+    webserialWarning = document.getElementById("webserial-warning");
 
     if (!navigator.serial) {
-        firmwaresDiv.innerHTML = `
-            <article class="message is-danger">
-            <div class="message-header">
-            <p>Unsupported browser</p>
-            </div>
-            <div class="message-body">
-            Darn, it looks like your browser does not support the WebSerial API.
-            <br>
-            Please try again with Google Chrome or Microsoft Edge.
-            </div>
-            </article>
-        `;
-        return;
+        webserialWarning.style.display = '';
+        uploadBtn.style.display = 'none';
+        progressBar.style.display = 'none';
+        result.style.display = 'none';
+    } else {
+        uploadBtn.addEventListener('click', handleFlash, false);
     }
-
-    uploadBtn.addEventListener('click', handleFlash, false);
 
     firmwaresDiv.addEventListener('click', (ev) => {
         if (ev.target.tagName === 'INPUT') {
             const input = ev.target;
             hexUrl = input.dataset.url;
             uploadBtn.disabled = false;
+            downloadBtn.removeAttribute('disabled');
+            downloadBtn.href = hexUrl;
             window.location.hash = `#pr=${input.dataset.pr}`;
         }
     });
