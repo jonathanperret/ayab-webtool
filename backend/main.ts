@@ -13,7 +13,7 @@ log.setup({
 });
 
 const githubCache = await caches.open('github');
-const githubCacheSuffix = ':v4';
+const githubCacheSuffix = ':v5';
 
 const repoUrl =
   'https://api.github.com/repos/AllYarnsAreBeautiful/ayab-firmware';
