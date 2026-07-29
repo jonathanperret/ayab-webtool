@@ -57,7 +57,7 @@ function htmlEscape(s) {
 }
 
 async function getFirmwares() {
-    const hexsResponse = await fetch("https://ayab-firmware-binaries.deno.dev/hex");
+    const hexsResponse = await fetch("https://ayab-webtool.jonathanperret.deno.net/hex");
     const hexs = await hexsResponse.json();
 
     firmwaresDiv.innerHTML = `
