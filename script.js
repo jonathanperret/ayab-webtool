@@ -59,10 +59,13 @@ function htmlEscape(s) {
 async function getFirmwares() {
     const hexsResponse = await fetch("https://ayab-webtool.jonathanperret.deno.net/hex");
     const hexs = await hexsResponse.json();
+    const latestHexs = [...hexs]
+        .sort((a, b) => Date.parse(b.created_at ?? 0) - Date.parse(a.created_at ?? 0))
+        .filter((hex, index, allHexs) => allHexs.findIndex((candidate) => candidate.pull_number === hex.pull_number) === index);
 
     firmwaresDiv.innerHTML = `
         <p class="panel-heading">Pick a PR to flash its firmware</p>
-        ${hexs.map(hex => `
+        ${latestHexs.map(hex => `
             <label class="panel-block radio">
                 <input type="radio" name="firmware" class="mr-2" data-url="${hex.download_url}" data-pr="${hex.pull_number}">
                 <div class="is-flex is-flex-direction-column">
