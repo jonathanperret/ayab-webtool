@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AYAB web tool</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/avrgirl-arduino@5.0.1/dist/avrgirl-arduino.global.js"></script>
+    <script type="module" src="hwtest.js"></script>
+  </head>
+  <body>
+    <section class="section has-text-weight-bold">
+      <div class="container">
+        <h1 class="title">AYAB web tool</h1>
+        <p class="subtitle">
+          Test your <a href="https://ayab-knitting.com">AYAB</a> hardware!
+        </p>
+
+        <button class="button is-primary" id="connectBtn">Connect</button>
+
+        <div id="result"></div>
+
+        <div class="fixed-grid has-11-cols">
+          <div class="grid">
+            <div class="cell is-col-span-4">
+              <progress
+                class="progress is-large"
+                max="1024"
+                value="0"
+                id="leftSensor"
+              ></progress>
+            </div>
+            <div class="cell">
+              <span class="tag is-info is-light" id="encA">A</span>
+            </div>
+            <div class="cell">
+              <span class="tag is-info is-light" id="encB">B</span>
+            </div>
+            <div class="cell">
+              <span class="tag is-info is-light" id="encC">C</span>
+            </div>
+            <div class="cell is-col-span-4">
+              <progress
+                class="progress is-large"
+                max="1024"
+                value="0"
+                id="rightSensor"
+              ></progress>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
