@@ -99,7 +99,7 @@ async function getFirmwares() {
         <p class="panel-block has-background-light">Releases</p>
         ${releases.length ? releases.map((release, index) => `
             <label class="panel-block radio ${index >= visibleReleaseCount ? 'is-hidden' : ''}" ${index >= visibleReleaseCount ? 'data-extra-release' : ''}>
-                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}">
+                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}" data-release ${release.prerelease ? 'data-prerelease' : ''}>
                 <div class="is-flex is-flex-direction-column">
                     <span><a href="${htmlEscape(release.release_url)}" target="_blank" class="mr-1">${htmlEscape(release.name)}</a>${release.prerelease ? '<span class="tag is-warning is-light ml-1">pre-release</span>' : ''}</span>
                     <span class="is-size-7 ml-1">published on ${new Date(release.published_at).toLocaleString()}</span>
@@ -133,11 +133,28 @@ function selectFirmwareFromURL() {
             const hash = new URLSearchParams({ [key]: value }).toString();
             const input = [...firmwaresDiv.querySelectorAll('input[data-hash]')]
                 .find((candidate) => candidate.dataset.hash === hash);
-            if (input?.closest('[data-extra-release]')) showAllReleases();
-            input?.click();
-            return;
+            if (input) {
+                if (input.closest('[data-extra-release]')) showAllReleases();
+                input.click();
+                return;
+            }
         }
     }
+
+    // Default to the latest release, preferring one that isn't a pre-release.
+    const releaseInputs = [...firmwaresDiv.querySelectorAll('input[data-release]')];
+    const latest = releaseInputs.find((input) => !('prerelease' in input.dataset)) ?? releaseInputs[0];
+    if (latest) {
+        latest.checked = true;
+        selectFirmware(latest);
+    }
+}
+
+function selectFirmware(input) {
+    hexUrl = input.dataset.url;
+    uploadBtn.disabled = false;
+    downloadBtn.removeAttribute('disabled');
+    downloadBtn.href = hexUrl;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -162,10 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showAllReleases();
         } else if (ev.target.tagName === 'INPUT') {
             const input = ev.target;
-            hexUrl = input.dataset.url;
-            uploadBtn.disabled = false;
-            downloadBtn.removeAttribute('disabled');
-            downloadBtn.href = hexUrl;
+            selectFirmware(input);
             window.location.hash = `#${input.dataset.hash}`;
         }
     });
