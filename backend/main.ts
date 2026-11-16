@@ -21,6 +21,8 @@ const defaultRepo = { owner: 'AllYarnsAreBeautiful', repo: 'ayab-firmware' };
 const allowedRepos = [
   'AllYarnsAreBeautiful/ayab-firmware',
   'MathKnitting/silverreed-firmware',
+  'jonathanperret/ayab-firmware',
+  'jpcornil-git/ayabAsync-firmware',
 ];
 
 const corsHeaders = { 'access-control-allow-origin': '*' };
@@ -189,7 +191,10 @@ const releases: RepoHandler = async (req, { repoUrl, basePath }) => {
 
   const hexs = [];
   for (const release of releases.filter((r) => !r.draft)) {
-    const asset = release.assets.find((a) => /\.hex$/.test(a.name));
+    // Releases may hold builds for several boards: prefer the Uno one, since
+    // that's what the frontend flashes.
+    const hexAssets = release.assets.filter((a) => /\.hex$/.test(a.name));
+    const asset = hexAssets.find((a) => /uno/i.test(a.name)) ?? hexAssets[0];
     if (asset) {
       hexs.push({
         download_url: new URL(
