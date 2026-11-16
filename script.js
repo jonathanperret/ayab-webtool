@@ -76,12 +76,6 @@ const defaultRepo = 'AllYarnsAreBeautiful/ayab-firmware';
 const repoParam = new URLSearchParams(location.search).get('repo');
 const repo = /^[\w-]+\/[\w.-]+$/.test(repoParam ?? '') ? repoParam : defaultRepo;
 
-// Per-repository cutoff (keys in lowercase): older releases aren't offered.
-const minimumReleaseDates = {
-    'allyarnsarebeautiful/ayab-firmware': '2025-02-24T00:00:00Z', // 1.0.0 release
-};
-const minimumReleaseDate = Date.parse(minimumReleaseDates[repo.toLowerCase()] ?? 0);
-
 // Releases beyond this many are hidden behind a "show all" link.
 const visibleReleaseCount = 3;
 
@@ -91,12 +85,10 @@ function showAllReleases() {
 }
 
 async function getFirmwares() {
-    const [allReleases, hexs] = await Promise.all([
+    const [releases, hexs] = await Promise.all([
         fetchJson(`${backendUrl}/repos/${repo}/releases`),
         fetchJson(`${backendUrl}/repos/${repo}/pulls`),
     ]);
-
-    const releases = allReleases.filter((release) => Date.parse(release.published_at) >= minimumReleaseDate);
 
     const latestHexs = [...hexs]
         .sort((a, b) => Date.parse(b.created_at ?? 0) - Date.parse(a.created_at ?? 0))
