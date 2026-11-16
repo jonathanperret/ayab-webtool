@@ -71,13 +71,21 @@ async function fetchJson(url) {
     }
 }
 
-// Only offer releases published on or after the 1.0.0 release date.
-const minimumReleaseDate = Date.parse('2025-02-24T00:00:00Z');
+// The firmware repository can be picked with a ?repo=owner/name URL parameter.
+const defaultRepo = 'AllYarnsAreBeautiful/ayab-firmware';
+const repoParam = new URLSearchParams(location.search).get('repo');
+const repo = /^[\w-]+\/[\w.-]+$/.test(repoParam ?? '') ? repoParam : defaultRepo;
+
+// Per-repository cutoff (keys in lowercase): older releases aren't offered.
+const minimumReleaseDates = {
+    'allyarnsarebeautiful/ayab-firmware': '2025-02-24T00:00:00Z', // 1.0.0 release
+};
+const minimumReleaseDate = Date.parse(minimumReleaseDates[repo.toLowerCase()] ?? 0);
 
 async function getFirmwares() {
     const [allReleases, hexs] = await Promise.all([
-        fetchJson(`${backendUrl}/releases`),
-        fetchJson(`${backendUrl}/pulls`),
+        fetchJson(`${backendUrl}/repos/${repo}/releases`),
+        fetchJson(`${backendUrl}/repos/${repo}/pulls`),
     ]);
 
     const releases = allReleases.filter((release) => Date.parse(release.published_at) >= minimumReleaseDate);
@@ -87,7 +95,7 @@ async function getFirmwares() {
         .filter((hex, index, allHexs) => allHexs.findIndex((candidate) => candidate.pull_number === hex.pull_number) === index);
 
     firmwaresDiv.innerHTML = `
-        <p class="panel-heading">Pick a firmware to flash</p>
+        <p class="panel-heading">Pick a firmware to flash from <a href="https://github.com/${htmlEscape(repo)}" target="_blank" class="has-text-white is-underlined">${htmlEscape(repo)}</a></p>
         <p class="panel-block has-background-light">Releases</p>
         ${releases.length ? releases.map(release => `
             <label class="panel-block radio">
