@@ -79,6 +79,17 @@ const repo = /^[\w-]+\/[\w.-]+$/.test(repoParam ?? '') ? repoParam : defaultRepo
 // Releases beyond this many are hidden behind a "show all" link.
 const visibleReleaseCount = 3;
 
+// Picks the releases shown before "show all": the latest ones, but always
+// including the latest non-prerelease if there is one.
+function pickVisibleReleases(releases) {
+    const visible = releases.slice(0, visibleReleaseCount);
+    if (!visible.some((release) => !release.prerelease)) {
+        const stable = releases.find((release) => !release.prerelease);
+        if (stable) visible.splice(visible.length - 1, 1, stable);
+    }
+    return new Set(visible);
+}
+
 function showAllReleases() {
     firmwaresDiv.querySelectorAll('[data-extra-release]').forEach((label) => label.classList.remove('is-hidden'));
     firmwaresDiv.querySelector('[data-show-all-releases]')?.remove();
@@ -90,6 +101,8 @@ async function getFirmwares() {
         fetchJson(`${backendUrl}/repos/${repo}/pulls`),
     ]);
 
+    const visibleReleases = pickVisibleReleases(releases);
+
     const latestHexs = [...hexs]
         .sort((a, b) => Date.parse(b.created_at ?? 0) - Date.parse(a.created_at ?? 0))
         .filter((hex, index, allHexs) => allHexs.findIndex((candidate) => candidate.pull_number === hex.pull_number) === index);
@@ -97,9 +110,9 @@ async function getFirmwares() {
     firmwaresDiv.innerHTML = `
         <p class="panel-heading">Pick a firmware to flash from <a href="https://github.com/${htmlEscape(repo)}" target="_blank" class="has-text-white is-underlined">${htmlEscape(repo)}</a></p>
         <p class="panel-block has-background-light">Releases</p>
-        ${releases.length ? releases.map((release, index) => `
-            <label class="panel-block radio ${index >= visibleReleaseCount ? 'is-hidden' : ''}" ${index >= visibleReleaseCount ? 'data-extra-release' : ''}>
-                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}" data-release ${release.prerelease ? 'data-prerelease' : ''}>
+        ${releases.length ? releases.map((release) => `
+            <label class="panel-block radio ${visibleReleases.has(release) ? '' : 'is-hidden'}" ${visibleReleases.has(release) ? '' : 'data-extra-release'}>
+                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}" data-release>
                 <div class="is-flex is-flex-direction-column">
                     <span><a href="${htmlEscape(release.release_url)}" target="_blank" class="mr-1">${htmlEscape(release.name)}</a>${release.prerelease ? '<span class="tag is-warning is-light ml-1">pre-release</span>' : ''}</span>
                     <span class="is-size-7 ml-1">published on ${new Date(release.published_at).toLocaleString()}</span>
@@ -141,9 +154,8 @@ function selectFirmwareFromURL() {
         }
     }
 
-    // Default to the latest release, preferring one that isn't a pre-release.
-    const releaseInputs = [...firmwaresDiv.querySelectorAll('input[data-release]')];
-    const latest = releaseInputs.find((input) => !('prerelease' in input.dataset)) ?? releaseInputs[0];
+    // Default to the latest release, even if it's a pre-release.
+    const latest = firmwaresDiv.querySelector('input[data-release]');
     if (latest) {
         latest.checked = true;
         selectFirmware(latest);
