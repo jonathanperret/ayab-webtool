@@ -53,27 +53,61 @@ function htmlEscape(s) {
         '&': '&amp;'
     }
 
-    return s.replace(/[<>"&]/g, escapeChar)
+    return String(s).replace(/[<>"&]/g, escapeChar)
 }
 
+const backendUrl = ['localhost', '127.0.0.1'].includes(location.hostname)
+    ? 'http://localhost:8000'
+    : 'https://ayab-webtool.jonathanperret.deno.net';
+
+async function fetchJson(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return await response.json();
+    } catch (error) {
+        console.error(`failed to fetch ${url}`, error);
+        return [];
+    }
+}
+
+// Only offer releases published on or after the 1.0.0 release date.
+const minimumReleaseDate = Date.parse('2025-02-24T00:00:00Z');
+
 async function getFirmwares() {
-    const hexsResponse = await fetch("https://ayab-webtool.jonathanperret.deno.net/hex");
-    const hexs = await hexsResponse.json();
+    const [allReleases, hexs] = await Promise.all([
+        fetchJson(`${backendUrl}/releases`),
+        fetchJson(`${backendUrl}/pulls`),
+    ]);
+
+    const releases = allReleases.filter((release) => Date.parse(release.published_at) >= minimumReleaseDate);
+
     const latestHexs = [...hexs]
         .sort((a, b) => Date.parse(b.created_at ?? 0) - Date.parse(a.created_at ?? 0))
         .filter((hex, index, allHexs) => allHexs.findIndex((candidate) => candidate.pull_number === hex.pull_number) === index);
 
     firmwaresDiv.innerHTML = `
-        <p class="panel-heading">Pick a PR to flash its firmware</p>
-        ${latestHexs.map(hex => `
+        <p class="panel-heading">Pick a firmware to flash</p>
+        <p class="panel-block has-background-light">Releases</p>
+        ${releases.length ? releases.map(release => `
             <label class="panel-block radio">
-                <input type="radio" name="firmware" class="mr-2" data-url="${hex.download_url}" data-pr="${hex.pull_number}">
+                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}">
                 <div class="is-flex is-flex-direction-column">
-                    <span><a href="${hex.pull_url}" target="_blank" class="mr-1">#${hex.pull_number}</a>${htmlEscape(hex.pull_title)}</span>
+                    <span><a href="${htmlEscape(release.release_url)}" target="_blank" class="mr-1">${htmlEscape(release.name)}</a>${release.prerelease ? '<span class="tag is-warning is-light ml-1">pre-release</span>' : ''}</span>
+                    <span class="is-size-7 ml-1">published on ${new Date(release.published_at).toLocaleString()}</span>
+                </div>
+            </label>
+        `).join('') : '<p class="panel-block">No releases found.</p>'}
+        <p class="panel-block has-background-light">Pull requests</p>
+        ${latestHexs.length ? latestHexs.map(hex => `
+            <label class="panel-block radio">
+                <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(hex.download_url)}" data-hash="pr=${hex.pull_number}">
+                <div class="is-flex is-flex-direction-column">
+                    <span><a href="${htmlEscape(hex.pull_url)}" target="_blank" class="mr-1">#${hex.pull_number}</a>${htmlEscape(hex.pull_title)}</span>
                     <span class="is-size-7 ml-1">built on ${new Date(hex.created_at).toLocaleString()}</span>
                 </div>
-            </label>            
-        `).join('')}
+            </label>
+        `).join('') : '<p class="panel-block">No PR builds found.</p>'}
     `;
 
     selectFirmwareFromURL();
@@ -81,11 +115,16 @@ async function getFirmwares() {
 
 function selectFirmwareFromURL() {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    const pr = hashParams?.get('pr');
 
-    if (pr) {
-        const prInput = firmwaresDiv.querySelector(`input[data-pr="${pr}"]`);
-        prInput?.click();
+    for (const key of ['release', 'pr']) {
+        const value = hashParams.get(key);
+        if (value) {
+            const hash = new URLSearchParams({ [key]: value }).toString();
+            const input = [...firmwaresDiv.querySelectorAll('input[data-hash]')]
+                .find((candidate) => candidate.dataset.hash === hash);
+            input?.click();
+            return;
+        }
     }
 }
 
@@ -113,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadBtn.disabled = false;
             downloadBtn.removeAttribute('disabled');
             downloadBtn.href = hexUrl;
-            window.location.hash = `#pr=${input.dataset.pr}`;
+            window.location.hash = `#${input.dataset.hash}`;
         }
     });
 
