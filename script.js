@@ -82,6 +82,14 @@ const minimumReleaseDates = {
 };
 const minimumReleaseDate = Date.parse(minimumReleaseDates[repo.toLowerCase()] ?? 0);
 
+// Releases beyond this many are hidden behind a "show all" link.
+const visibleReleaseCount = 3;
+
+function showAllReleases() {
+    firmwaresDiv.querySelectorAll('[data-extra-release]').forEach((label) => label.classList.remove('is-hidden'));
+    firmwaresDiv.querySelector('[data-show-all-releases]')?.remove();
+}
+
 async function getFirmwares() {
     const [allReleases, hexs] = await Promise.all([
         fetchJson(`${backendUrl}/repos/${repo}/releases`),
@@ -97,8 +105,8 @@ async function getFirmwares() {
     firmwaresDiv.innerHTML = `
         <p class="panel-heading">Pick a firmware to flash from <a href="https://github.com/${htmlEscape(repo)}" target="_blank" class="has-text-white is-underlined">${htmlEscape(repo)}</a></p>
         <p class="panel-block has-background-light">Releases</p>
-        ${releases.length ? releases.map(release => `
-            <label class="panel-block radio">
+        ${releases.length ? releases.map((release, index) => `
+            <label class="panel-block radio ${index >= visibleReleaseCount ? 'is-hidden' : ''}" ${index >= visibleReleaseCount ? 'data-extra-release' : ''}>
                 <input type="radio" name="firmware" class="mr-2" data-url="${htmlEscape(release.download_url)}" data-hash="release=${htmlEscape(encodeURIComponent(release.tag_name))}">
                 <div class="is-flex is-flex-direction-column">
                     <span><a href="${htmlEscape(release.release_url)}" target="_blank" class="mr-1">${htmlEscape(release.name)}</a>${release.prerelease ? '<span class="tag is-warning is-light ml-1">pre-release</span>' : ''}</span>
@@ -106,6 +114,9 @@ async function getFirmwares() {
                 </div>
             </label>
         `).join('') : '<p class="panel-block">No releases found.</p>'}
+        ${releases.length > visibleReleaseCount ? `
+            <a class="panel-block has-text-link" role="button" data-show-all-releases>Show all ${releases.length} releases</a>
+        ` : ''}
         <p class="panel-block has-background-light">Pull requests</p>
         ${latestHexs.length ? latestHexs.map(hex => `
             <label class="panel-block radio">
@@ -130,6 +141,7 @@ function selectFirmwareFromURL() {
             const hash = new URLSearchParams({ [key]: value }).toString();
             const input = [...firmwaresDiv.querySelectorAll('input[data-hash]')]
                 .find((candidate) => candidate.dataset.hash === hash);
+            if (input?.closest('[data-extra-release]')) showAllReleases();
             input?.click();
             return;
         }
@@ -154,7 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     firmwaresDiv.addEventListener('click', (ev) => {
-        if (ev.target.tagName === 'INPUT') {
+        if (ev.target.closest('[data-show-all-releases]')) {
+            showAllReleases();
+        } else if (ev.target.tagName === 'INPUT') {
             const input = ev.target;
             hexUrl = input.dataset.url;
             uploadBtn.disabled = false;
